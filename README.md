@@ -1,4 +1,4 @@
-# Holo.Codec v1.0
+# Holo.Codec
 # Holographic Media Codec for Extreme Networks
 
 <img width="1280" height="640" alt="Holo Codec" src="https://github.com/user-attachments/assets/0bbbe6a5-14bb-498c-ac55-62f2dfed5641" />
