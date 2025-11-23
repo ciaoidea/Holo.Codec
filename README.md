@@ -5,11 +5,12 @@
 
 Holo.Codec is an experimental **holographic codec for images and audio**, **designed for environments where connectivity is ultra-weak, intermittent, or one-way, and to support the exploration of otherwise inaccessible places**.
 
-Internally it is fully digital, but its behaviour under disturbance is **hybrid in spirit**: as chunks are lost the quality degrades smoothly, in a way that resembles analog observations or long-exposure telescopes integrating light over time, rather than the abrupt “all-or-nothing” failure typical of conventional digital formats.
+Internally, Holo.Codec is entirely digital, but its behaviour under disturbance is effectively **hybrid**: instead of the brittle, “all-or-nothing” failure of conventional formats, quality decays smoothly as chunks are lost, much like an analog observation or a long-exposure telescope integrating photons over time. For images it effectively acts as a **photon collector in time**: every received chunk adds a little more “light” and structure to the scene, so the picture progressively sharpens as chunks accumulate. In this regime Holo.Codec can sustain **extremely high-resolution imaging over very large distances and under severe radio and optical noise**: the link no longer has to deliver a perfect file in a single pass; it only needs to drip holographic chunks over time until a deep, high-resolution view finally emerges.
 
-- deep-space missions and planetary rovers  
-- remote exploration (caves, polar regions, underwater)  
-- disaster and emergency networks with high packet loss  
+* deep-space missions and planetary rovers
+* remote exploration (caves, polar regions, underwater)
+* disaster and emergency networks with high packet loss
+
 
 <img width="1024" height="1024" alt="drone" src="https://github.com/user-attachments/assets/f1db4f1c-8398-4670-9e35-c5a56e07283e" />
 
