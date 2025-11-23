@@ -48,6 +48,7 @@ def encode_image_holo_dir(
     out_dir: str,
     block_count: int = 32,
     coarse_max_side: int = 64,
+    target_chunk_kb: int | None = None,
 ) -> None:
     """
     Encode an image into a holographic directory of chunks.
@@ -75,6 +76,24 @@ def encode_image_holo_dir(
 
     residual = img.astype(np.int16) - coarse_up_arr.astype(np.int16)
     residual_flat = residual.reshape(-1)
+
+    # Se l'utente specifica una dimensione target per chunk, ricavo da lì block_count
+    if target_chunk_kb is not None:
+        residual_bytes_total = residual_flat.size * 2  # int16 -> 2 byte
+        try:
+            target_bytes = max(1, int(target_chunk_kb) * 1024)
+        except ValueError:
+            target_bytes = None
+
+        if target_bytes is not None:
+            header_overhead = 64  # header + margine
+            overhead_approx = len(coarse_bytes) + header_overhead
+            if target_bytes <= overhead_approx + 1:
+                block_count = 1
+            else:
+                useful_per_chunk = target_bytes - overhead_approx
+                block_count = int(np.ceil(residual_bytes_total / useful_per_chunk))
+                block_count = max(1, min(block_count, residual_flat.size))
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -237,6 +256,7 @@ def encode_audio_holo_dir(
     out_dir: str,
     block_count: int = 16,
     coarse_max_frames: int = 2048,
+    target_chunk_kb: int | None = None,
 ) -> None:
     """
     Encode a WAV file into a holographic directory of chunks.
@@ -267,6 +287,23 @@ def encode_audio_holo_dir(
 
     coarse_bytes = coarse.astype("<i2").tobytes()
     coarse_comp = zlib.compress(coarse_bytes, level=9)
+
+    if target_chunk_kb is not None:
+        residual_bytes_total = residual_flat.size * 2  # int16
+        try:
+            target_bytes = max(1, int(target_chunk_kb) * 1024)
+        except ValueError:
+            target_bytes = None
+
+        if target_bytes is not None:
+            header_overhead = 64
+            overhead_approx = len(coarse_comp) + header_overhead
+            if target_bytes <= overhead_approx + 1:
+                block_count = 1
+            else:
+                useful_per_chunk = target_bytes - overhead_approx
+                block_count = int(np.ceil(residual_bytes_total / useful_per_chunk))
+                block_count = max(1, min(block_count, residual_flat.size))
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -375,7 +412,10 @@ def decode_audio_holo_dir(
             k1 = np.clip(k0 + 1, 0, coarse_len - 1)
             alpha = (t - k0).astype(np.float64)
             coarse_f = coarse.astype(np.float64)
-            coarse_up = (1.0 - alpha)[:, None] * coarse_f[k0] + alpha[:, None] * coarse_f[k1]
+            coarse_up = (
+                (1.0 - alpha)[:, None] * coarse_f[k0]
+                + alpha[:, None] * coarse_f[k1]
+            )
             coarse_up = np.round(coarse_up).astype(np.int16)
 
             residual_flat = np.zeros(n_frames * ch, dtype=np.int16)
@@ -416,6 +456,7 @@ def encode_binary_holo_dir(
     out_dir: str,
     block_count: int = 32,
     coarse_len: int = 1024,
+    target_chunk_kb: int | None = None,
 ) -> None:
     """
     Encode a generic binary file into a holographic directory.
@@ -435,13 +476,33 @@ def encode_binary_holo_dir(
     rest = data[coarse_len:]
     rest_arr = np.frombuffer(rest, dtype=np.uint8)
 
+    coarse_comp = zlib.compress(coarse, level=9)
+
+    if target_chunk_kb is not None:
+        residual_bytes_total = rest_arr.size
+        try:
+            target_bytes = max(1, int(target_chunk_kb) * 1024)
+        except ValueError:
+            target_bytes = None
+
+        if target_bytes is not None:
+            header_overhead = 64
+            overhead_approx = len(coarse_comp) + header_overhead
+            if target_bytes <= overhead_approx + 1:
+                block_count = 1
+            else:
+                useful_per_chunk = target_bytes - overhead_approx
+                block_count = int(np.ceil(residual_bytes_total / useful_per_chunk))
+                # Residual_bytes_total può essere 0 se coarse_len == L
+                max_blocks = max(1, residual_bytes_total)
+                block_count = max(1, min(block_count, max_blocks))
+
     os.makedirs(out_dir, exist_ok=True)
 
     for block_id in range(block_count):
         vals = rest_arr[block_id::block_count]
         vals_bytes = vals.tobytes()
         comp_vals = zlib.compress(vals_bytes, level=9)
-        coarse_comp = zlib.compress(coarse, level=9)
 
         header = bytearray()
         header += MAGIC_BIN
@@ -566,13 +627,21 @@ def detect_mode_from_chunk(in_dir: str) -> str:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         print("Simple usage:")
-        print("  python3 holo.py original_file      # creates original_file.holo (directory)")
-        print("  python3 holo.py original_file.holo # reconstructs original_file")
+        print("  python3 holo.py original_file [chunk_kb]      # creates original_file.holo (directory)")
+        print("  python3 holo.py original_file.holo           # reconstructs original_file")
         sys.exit(1)
 
     target = sys.argv[1]
+    chunk_kb: int | None = None
+
+    if len(sys.argv) == 3:
+        try:
+            chunk_kb = int(sys.argv[2])
+        except ValueError:
+            print("Invalid chunk_kb value, must be an integer (KB).")
+            sys.exit(1)
 
     if os.path.isfile(target):
         # Encode
@@ -581,11 +650,11 @@ def main() -> None:
         mode = detect_mode_from_extension(input_path)
 
         if mode == "image":
-            encode_image_holo_dir(input_path, out_dir)
+            encode_image_holo_dir(input_path, out_dir, target_chunk_kb=chunk_kb)
         elif mode == "audio":
-            encode_audio_holo_dir(input_path, out_dir)
+            encode_audio_holo_dir(input_path, out_dir, target_chunk_kb=chunk_kb)
         else:
-            encode_binary_holo_dir(input_path, out_dir)
+            encode_binary_holo_dir(input_path, out_dir, target_chunk_kb=chunk_kb)
 
     elif os.path.isdir(target):
         # Decode
