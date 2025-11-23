@@ -146,6 +146,8 @@ as more chunk indices are accumulated over time. This behaviour is especially us
 for simplex beacons, satellite experiments, and weak-signal HF links where ARQ and
 full reliability are impractical.
 
+<img width="800" height="533" alt="HAM" src="https://github.com/user-attachments/assets/142f4f96-0b88-4d8a-b1f2-36b75272dc0a" />
+
 ---
 
 ## Progressive telescope imaging and long exposures
@@ -169,6 +171,9 @@ chunks are collected over multiple passes. In this way the digital data stream
 behaves like an extended optical exposure, with robustness against interruptions
 and radiation-induced link failures that would otherwise destroy a conventional
 digital file.
+
+![spiral_galaxy_ngc_3982](https://github.com/user-attachments/assets/e54cc636-5720-4458-9545-2a8c1200b027)
+
 
 ---
 
