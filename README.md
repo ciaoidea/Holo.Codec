@@ -7,7 +7,7 @@
 Holo.Codec is an experimental **holographic codec for images and audio** designed for
 environments where connectivity is ultra–weak, intermittent, or one–way:
 
-- deep‑space missions and planetary rovers  
+- deep-space missions and planetary rovers  
 - remote exploration (caves, polar regions, underwater)  
 - disaster and emergency networks with high packet loss  
 
@@ -19,7 +19,7 @@ a smooth, graceful degradation in quality.
 
 ## Core idea
 
-Traditional formats (PNG, JPEG, WAV) are “all‑or‑nothing”: if the right bytes are
+Traditional formats (PNG, JPEG, WAV) are “all-or-nothing”: if the right bytes are
 missing, the file becomes unusable.
 
 Holo.Codec restructures the content into a set of *holographic chunks*:
@@ -43,13 +43,13 @@ There is no single “critical” chunk. Every packet adds value; no packet is m
 
 ## Why it matters
 
-Holo.Codec is not a general‑purpose archival format. It shines where the dominant
+Holo.Codec is not a general-purpose archival format. It shines where the dominant
 constraint is **link quality**, not storage:
 
-- long‑range or deep‑space links with very low SNR and limited visibility windows  
-- one‑way broadcasts or beacons where acknowledgements and re‑transmissions are
+- long-range or deep-space links with very low SNR and limited visibility windows  
+- one-way broadcasts or beacons where acknowledgements and re-transmissions are
   expensive or impossible  
-- ad‑hoc or emergency networks where packet loss is high and unpredictable
+- ad-hoc or emergency networks where packet loss is high and unpredictable
 
 Instead of “perfect or nothing”, Holo.Codec guarantees “**something useful, always**”:
 
@@ -67,7 +67,7 @@ linear file, the transmission strategy can exploit **time, frequency and path
 diversity** very naturally:
 
 - chunks can be spread across multiple frequency bands or physical links (for example,
-  different space‑ground paths); any subset of received chunks still reconstructs
+  different space-ground paths); any subset of received chunks still reconstructs
   a valid image or audio track  
 - chunks can be transmitted in cyclic schedules over time, so that receivers can
   attach to the stream at any point, immediately reconstruct a coarse version,
@@ -90,15 +90,15 @@ This prototype is implemented in Python and focuses on **perceptual media**:
 
 - Images: PNG/JPEG/BMP input, holographic `.holo` directory of chunks,  
   reconstruction to a viewable image (PNG).  
-- Audio: WAV PCM 16‑bit or 24‑bit input, holographic `.holo` directory,  
-  reconstruction to WAV 16‑bit.  
+- Audio: WAV PCM 16-bit or 24-bit input, holographic `.holo` directory,  
+  reconstruction to WAV 16-bit.  
 - Binary files (including PDF, DOCX, etc.): experimental support aimed at
-  “all‑chunks‑present” round‑trip; there is *no* structural resilience if you
+  “all-chunks-present” round-trip; there is *no* structural resilience if you
   delete chunks (formats like PDF do not degrade gracefully).
 
 The codec is intentionally simple:
 
-- images: global thumbnail + pixel‑domain residuals  
+- images: global thumbnail + pixel-domain residuals  
 - audio: coarse downsampled track + temporal residuals  
 - chunking: residuals are interleaved across chunks so that each chunk refines
   different pixels/samples
@@ -110,8 +110,13 @@ It is **not** yet tuned for optimal compression; it is a research prototype.
 
 ## Quick start
 
-You only pass **one argument**: either an original file (encode) or a `.holo`
-directory (decode).
+You pass the input path and, optionally, a target chunk size in kilobytes:
+
+- first argument: original file (encode) or `.holo` directory (decode)  
+- optional second argument: integer `chunk_kb` ≈ target size per holographic chunk
+
+Smaller `chunk_kb` means more, smaller chunks (better robustness on unstable links,
+higher overhead); larger `chunk_kb` means fewer, bigger chunks.
 
 ### Images
 
@@ -119,6 +124,10 @@ directory (decode).
 # Encode: original -> holographic directory
 python3 holo.py mars_panorama.png
 # creates: mars_panorama.png.holo
+
+# Encode with ~20 KB target chunk size per holographic chunk
+python3 holo.py mars_panorama.png 20
+# creates: mars_panorama.png.holo with many smaller chunk_XXXX.holo files
 
 # Decode: holographic directory -> reconstructed image
 python3 holo.py mars_panorama.png.holo
