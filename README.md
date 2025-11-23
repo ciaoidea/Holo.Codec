@@ -4,7 +4,7 @@
 <img width="1280" height="640" alt="Holo Codec" src="https://github.com/user-attachments/assets/0bbbe6a5-14bb-498c-ac55-62f2dfed5641" />
 
 
-Holo.Codec v1.0 is an experimental **holographic codec for images and audio** designed for
+Holo.Codec is an experimental **holographic codec for images and audio** designed for
 environments where connectivity is ultra–weak, intermittent, or one–way:
 
 - deep‑space missions and planetary rovers  
@@ -43,7 +43,7 @@ There is no single “critical” chunk. Every packet adds value; no packet is m
 
 ## Why it matters
 
-Holo.Codec v1.0 is not a general‑purpose archival format. It shines where the dominant
+Holo.Codec is not a general‑purpose archival format. It shines where the dominant
 constraint is **link quality**, not storage:
 
 - long‑range or deep‑space links with very low SNR and limited visibility windows  
