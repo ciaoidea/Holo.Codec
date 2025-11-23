@@ -125,3 +125,74 @@ On the sender, a normal media file is converted into a holographic directory:
 # Example: holographic image for packet radio, ~20 KB per chunk
 python3 holo.py test_image.png 20
 # creates: test_image.png.holo with many chunk_XXXX.holo files
+````
+
+Each `chunk_XXXX.holo` file becomes an independent payload for the radio link. Frames
+can be sent in any order, repeated cyclically, or distributed across multiple
+frequencies or relays; every successfully received chunk contributes immediately to
+the reconstruction at the receiver.
+
+On the receiving side, collected chunks are stored into a directory named
+`test_image.png.holo` and decoded:
+
+```bash
+python3 holo.py test_image.png.holo
+# reconstructs test_image.png from whatever chunks were received
+```
+
+Even if only a fraction of the chunks survive fading, collisions or QRM, the operator
+still recovers a globally correct image or audio track, with quality that improves
+as more chunk indices are accumulated over time. This behaviour is especially useful
+for simplex beacons, satellite experiments, and weak-signal HF links where ARQ and
+full reliability are impractical.
+
+---
+
+## Progressive telescope imaging and long exposures
+
+Telescopes that integrate light progressively over many short exposures already
+produce images that “emerge” from noise as photons accumulate. Holo.Codec can be
+applied on top of this process by treating the stacked or partially stacked image
+as a signal to be encoded holographically.
+
+Instead of downlinking a single, fragile FITS file or a sequence of raw sub-frames,
+the on-board system can produce a set of holographic chunks:
+
+* a coarse, low-resolution map of the field of view
+* residual information that captures faint structures and fine detail, spread
+  across many chunks
+
+Ground stations that receive only a subset of those chunks still reconstruct a
+scientifically meaningful view of the sky: bright sources and large-scale structure
+appear early, while fainter galaxies and subtle features gradually emerge as more
+chunks are collected over multiple passes. In this way the digital data stream
+behaves like an extended optical exposure, with robustness against interruptions
+and radiation-induced link failures that would otherwise destroy a conventional
+digital file.
+
+---
+
+## Quick start
+
+You pass the input path and, optionally, a target chunk size in kilobytes:
+
+* first argument: original file (encode) or `.holo` directory (decode)
+* optional second argument: integer `chunk_kb` ≈ target size per holographic chunk
+
+Smaller `chunk_kb` means more, smaller chunks (better robustness on unstable links,
+higher overhead); larger `chunk_kb` means fewer, bigger chunks.
+
+### Images
+
+```bash
+# Encode: original -> holographic directory
+python3 holo.py mars_panorama.png
+# creates: mars_panorama.png.holo
+
+# Encode with ~20 KB target chunk size per holographic chunk
+python3 holo.py mars_panorama.png 20
+# creates: mars_panorama.png.holo with many smaller chunk_XXXX.holo files
+
+# Decode: holographic directory -> reconstructed image
+python3 holo.py mars_panorama.png.holo
+# creates: mars_panorama.png  (reconstructed)
