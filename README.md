@@ -11,9 +11,13 @@ Internally it is fully digital, but its behaviour under disturbance is **hybrid 
 - remote exploration (caves, polar regions, underwater)  
 - disaster and emergency networks with high packet loss  
 
+<img width="1024" height="1024" alt="drone" src="https://github.com/user-attachments/assets/f1db4f1c-8398-4670-9e35-c5a56e07283e" />
+
+
 Any subset of the transmitted chunks reconstructs a **usable** version of the content.  
 More chunks ⇒ more detail. Losing chunks never means “no image” or “no audio”, only
 a smooth, graceful degradation in quality.
+
 
 ---
 
