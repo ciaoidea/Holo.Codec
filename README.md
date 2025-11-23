@@ -3,9 +3,9 @@
 
 <img width="1280" height="640" alt="Holo Codec" src="https://github.com/user-attachments/assets/0bbbe6a5-14bb-498c-ac55-62f2dfed5641" />
 
-
 Holo.Codec is an experimental **holographic codec for images and audio**, **designed for environments where connectivity is ultra-weak, intermittent, or one-way, and to support the exploration of otherwise inaccessible places**.
 
+Internally it is fully digital, but its behaviour under disturbance is **hybrid in spirit**: as chunks are lost the quality degrades smoothly, in a way that resembles analog observations or long-exposure telescopes integrating light over time, rather than the abrupt “all-or-nothing” failure typical of conventional digital formats.
 
 - deep-space missions and planetary rovers  
 - remote exploration (caves, polar regions, underwater)  
@@ -50,6 +50,11 @@ constraint is **link quality**, not storage:
 - one-way broadcasts or beacons where acknowledgements and re-transmissions are
   expensive or impossible  
 - ad-hoc or emergency networks where packet loss is high and unpredictable
+
+In these conditions it behaves like a **digital system with analog-like results**:
+as interference and packet loss increase, the reconstruction quality decays gracefully
+instead of collapsing. Even under heavy disturbance the operator still sees or hears
+a meaningful approximation of the scene, rather than a corrupt or unreadable file.
 
 Instead of “perfect or nothing”, Holo.Codec guarantees “**something useful, always**”:
 
@@ -108,27 +113,15 @@ It is **not** yet tuned for optimal compression; it is a research prototype.
 
 ---
 
-## Quick start
+## Amateur packet radio and extreme RF links
 
-You pass the input path and, optionally, a target chunk size in kilobytes:
+Holo.Codec sits above classical amateur packet-radio protocols (AX.25, KISS, VARA, etc.).
+The radio link still transports ordinary binary frames; Holo.Codec only changes how
+images and audio are mapped into those frames.
 
-- first argument: original file (encode) or `.holo` directory (decode)  
-- optional second argument: integer `chunk_kb` ≈ target size per holographic chunk
-
-Smaller `chunk_kb` means more, smaller chunks (better robustness on unstable links,
-higher overhead); larger `chunk_kb` means fewer, bigger chunks.
-
-### Images
+On the sender, a normal media file is converted into a holographic directory:
 
 ```bash
-# Encode: original -> holographic directory
-python3 holo.py mars_panorama.png
-# creates: mars_panorama.png.holo
-
-# Encode with ~20 KB target chunk size per holographic chunk
-python3 holo.py mars_panorama.png 20
-# creates: mars_panorama.png.holo with many smaller chunk_XXXX.holo files
-
-# Decode: holographic directory -> reconstructed image
-python3 holo.py mars_panorama.png.holo
-# creates: mars_panorama.png  (reconstructed)
+# Example: holographic image for packet radio, ~20 KB per chunk
+python3 holo.py test_image.png 20
+# creates: test_image.png.holo with many chunk_XXXX.holo files
