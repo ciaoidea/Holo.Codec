@@ -44,6 +44,9 @@ residuals. On the receiver:
 
 There is no single “critical” chunk. Every packet adds value; no packet is mandatory.
 
+The codec builds a controlled superposition of a “slow” signal (low-frequency, in time or space) that is present in every block, and many small “fast” signals that are distributed across the blocks. Each block carries a low-resolution hologram of the entire signal plus a different slice of its fine detail; when you combine multiple blocks, you are literally summing their components in time and frequency, and this is what makes the definition increase as more blocks are received.
+
+
 ---
 
 ## Why it matters
