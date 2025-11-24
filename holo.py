@@ -43,6 +43,40 @@ def save_image(arr: np.ndarray, path: str) -> None:
     img.save(path)
 
 
+def stack_images_average(input_paths: list[str], output_path: str) -> None:
+    """
+    Stack multiple images (same size) by averaging them pixel-wise.
+
+    This simulates a telescope integrating light over time:
+    more frames -> deeper, less noisy image.
+    """
+    imgs = []
+    base_shape = None
+
+    for p in input_paths:
+        if not os.path.isfile(p):
+            print(f"[Holo] Skipping missing image: {p}")
+            continue
+        arr = load_image(p).astype(np.float32)
+        if base_shape is None:
+            base_shape = arr.shape
+        else:
+            if arr.shape != base_shape:
+                raise ValueError(
+                    f"Inconsistent frame shape: {p} has {arr.shape}, "
+                    f"expected {base_shape}"
+                )
+        imgs.append(arr)
+
+    if not imgs:
+        raise ValueError("No valid images to stack")
+
+    stack = np.mean(imgs, axis=0)
+    stack = np.clip(stack, 0.0, 255.0).astype(np.uint8)
+    save_image(stack, output_path)
+    print(f"[Holo] Stacked {len(imgs)} images -> {output_path}")
+
+
 def encode_image_holo_dir(
     input_path: str,
     out_dir: str,
@@ -77,16 +111,15 @@ def encode_image_holo_dir(
     residual = img.astype(np.int16) - coarse_up_arr.astype(np.int16)
     residual_flat = residual.reshape(-1)
 
-    # Se l'utente specifica una dimensione target per chunk, ricavo da lì block_count
     if target_chunk_kb is not None:
-        residual_bytes_total = residual_flat.size * 2  # int16 -> 2 byte
+        residual_bytes_total = residual_flat.size * 2  # int16 -> 2 bytes
         try:
             target_bytes = max(1, int(target_chunk_kb) * 1024)
         except ValueError:
             target_bytes = None
 
         if target_bytes is not None:
-            header_overhead = 64  # header + margine
+            header_overhead = 64  # header + margin
             overhead_approx = len(coarse_bytes) + header_overhead
             if target_bytes <= overhead_approx + 1:
                 block_count = 1
@@ -147,7 +180,7 @@ def decode_image_holo_dir(
             data = f.read()
 
         off = 0
-        magic = data[off : off + 4]
+        magic = data[off: off + 4]
         off += 4
         if magic != MAGIC_IMG:
             continue
@@ -156,24 +189,24 @@ def decode_image_holo_dir(
         if version != VERSION_IMG:
             raise ValueError(f"Unsupported image chunk version in {path}")
 
-        h_i = struct.unpack(">I", data[off : off + 4])[0]
+        h_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        w_i = struct.unpack(">I", data[off : off + 4])[0]
+        w_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
         c_i = data[off]
         off += 1
-        B_i = struct.unpack(">I", data[off : off + 4])[0]
+        B_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        block_id = struct.unpack(">I", data[off : off + 4])[0]
+        block_id = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        coarse_len = struct.unpack(">I", data[off : off + 4])[0]
+        coarse_len = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        resid_len = struct.unpack(">I", data[off : off + 4])[0]
+        resid_len = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
 
-        coarse_bytes = data[off : off + coarse_len]
+        coarse_bytes = data[off: off + coarse_len]
         off += coarse_len
-        resid_comp = data[off : off + resid_len]
+        resid_comp = data[off: off + resid_len]
 
         if first:
             h, w, c = h_i, w_i, c_i
@@ -359,7 +392,7 @@ def decode_audio_holo_dir(
             data = f.read()
 
         off = 0
-        magic = data[off : off + 4]
+        magic = data[off: off + 4]
         off += 4
         if magic != MAGIC_AUD:
             continue
@@ -373,24 +406,24 @@ def decode_audio_holo_dir(
         off += 1
         _pad = data[off]
         off += 1
-        sr_i = struct.unpack(">I", data[off : off + 4])[0]
+        sr_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        n_frames_i = struct.unpack(">I", data[off : off + 4])[0]
+        n_frames_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        block_count_i = struct.unpack(">I", data[off : off + 4])[0]
+        block_count_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        block_id = struct.unpack(">I", data[off : off + 4])[0]
+        block_id = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        coarse_len_i = struct.unpack(">I", data[off : off + 4])[0]
+        coarse_len_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        coarse_size = struct.unpack(">I", data[off : off + 4])[0]
+        coarse_size = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        resid_size = struct.unpack(">I", data[off : off + 4])[0]
+        resid_size = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
 
-        coarse_comp = data[off : off + coarse_size]
+        coarse_comp = data[off: off + coarse_size]
         off += coarse_size
-        resid_comp = data[off : off + resid_size]
+        resid_comp = data[off: off + resid_size]
 
         if first:
             if sampwidth != 2:
@@ -493,7 +526,6 @@ def encode_binary_holo_dir(
             else:
                 useful_per_chunk = target_bytes - overhead_approx
                 block_count = int(np.ceil(residual_bytes_total / useful_per_chunk))
-                # Residual_bytes_total può essere 0 se coarse_len == L
                 max_blocks = max(1, residual_bytes_total)
                 block_count = max(1, min(block_count, max_blocks))
 
@@ -547,7 +579,7 @@ def decode_binary_holo_dir(
             data = f.read()
 
         off = 0
-        magic = data[off : off + 4]
+        magic = data[off: off + 4]
         off += 4
         if magic != MAGIC_BIN:
             continue
@@ -556,22 +588,22 @@ def decode_binary_holo_dir(
         if version != VERSION_BIN:
             raise ValueError(f"Unsupported binary chunk version in {path}")
 
-        L_i = struct.unpack(">Q", data[off : off + 8])[0]
+        L_i = struct.unpack(">Q", data[off: off + 8])[0]
         off += 8
-        B_i = struct.unpack(">I", data[off : off + 4])[0]
+        B_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        block_id = struct.unpack(">I", data[off : off + 4])[0]
+        block_id = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        coarse_len_i = struct.unpack(">I", data[off : off + 4])[0]
+        coarse_len_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        coarse_size = struct.unpack(">I", data[off : off + 4])[0]
+        coarse_size = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
-        resid_size = struct.unpack(">I", data[off : off + 4])[0]
+        resid_size = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
 
-        coarse_comp = data[off : off + coarse_size]
+        coarse_comp = data[off: off + coarse_size]
         off += coarse_size
-        resid_comp = data[off : off + resid_size]
+        resid_comp = data[off: off + resid_size]
 
         if first:
             L = L_i
@@ -627,10 +659,40 @@ def detect_mode_from_chunk(in_dir: str) -> str:
 
 
 def main() -> None:
+    # Special mode: stack multiple PNGs into one image, then encode holographically
+    if len(sys.argv) >= 4 and sys.argv[1] == "--stack":
+        try:
+            chunk_kb = int(sys.argv[2])
+        except ValueError:
+            print("Usage: python3 holo.py --stack <chunk_kb> <frame1.png> [frame2.png ...]")
+            sys.exit(1)
+
+        frame_paths = sys.argv[3:]
+        if not frame_paths:
+            print("Usage: python3 holo.py --stack <chunk_kb> <frame1.png> [frame2.png ...]")
+            sys.exit(1)
+
+        first = frame_paths[0]
+        base, _ = os.path.splitext(first)
+        stacked_png = base + "_stack.png"
+        out_dir = stacked_png + ".holo"
+
+        print(f"[Holo] Stacking frames into {stacked_png}")
+        stack_images_average(frame_paths, stacked_png)
+
+        print(f"[Holo] Encoding stacked image into {out_dir}")
+        encode_image_holo_dir(
+            input_path=stacked_png,
+            out_dir=out_dir,
+            target_chunk_kb=chunk_kb,
+        )
+        sys.exit(0)
+
     if len(sys.argv) not in (2, 3):
         print("Simple usage:")
         print("  python3 holo.py original_file [chunk_kb]      # creates original_file.holo (directory)")
         print("  python3 holo.py original_file.holo           # reconstructs original_file")
+        print("  python3 holo.py --stack chunk_kb frame1.png [frame2.png ...]  # stack+encode")
         sys.exit(1)
 
     target = sys.argv[1]
