@@ -180,6 +180,40 @@ digital file.
 ![spiral_galaxy_ngc_3982](https://github.com/user-attachments/assets/e54cc636-5720-4458-9545-2a8c1200b027)
 
 
+### Stacking multiple exposures (telescope-style)
+
+If you have several PNG frames of the **same field** (same size, aligned on the sky) you can
+stack them and encode the result as a single holographic directory. The `--stack` mode first
+builds a deeper, cleaner image by averaging all input frames pixel-wise, then runs the normal
+Holo.Codec encoder on that stacked image.
+
+Example with three explicit frames:
+
+```bash
+# stack multiple PNGs of the same field and encode them as a single holographic directory
+python3 holo.py --stack 20 field_0000.png field_0001.png field_0002.png
+````
+
+If your frame names follow a regular pattern, you can use a shell glob:
+
+```bash
+# stack all matching frames and encode them
+python3 holo.py --stack 20 field_*.png
+```
+
+In both cases Holo.Codec will:
+
+1. create a new image like `field_0000_stack.png` that is the average of all input frames
+2. create a holographic directory `field_0000_stack.png.holo/` containing the chunks
+   for that stacked, high-depth image.
+
+On the receiver side you decode as usual:
+
+```bash
+python3 holo.py field_0000_stack.png.holo
+# -> produces field_0000_stack.png reconstructed from the available chunks
+
+
 ---
 
 ## Quick start
