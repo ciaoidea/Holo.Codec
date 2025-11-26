@@ -114,8 +114,3 @@ On that criterion the results on `flower.jpg` are very strong:
 In other words, the golden permutation does what it was designed to do: it turns the residual field into something that is uniformly shared across chunks, and the codec behaves as a resilient, holographic representation under random chunk erasures.
 
 Calling it “the best possible scheme in absolute terms” would require formal proofs and systematic comparisons against every conceivable interleaver and every channel model. What can be said from the data here is more modest and more precise: for a codec that does not add explicit redundancy and only reorders the residual into fixed chunks, this golden‑permutation layout shows the kind of near‑ideal resilience one wants to see. The CSV in this folder is not just a log; it is the experimental footprint of that behaviour.
-
-```
-::contentReference[oaicite:0]{index=0}
-```
-
