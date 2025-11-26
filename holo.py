@@ -12,6 +12,7 @@ import sys
 import glob
 import struct
 import zlib
+import math
 from io import BytesIO
 
 import numpy as np
@@ -19,13 +20,65 @@ from PIL import Image
 import wave
 
 MAGIC_IMG = b"HOCH"
-VERSION_IMG = 1
+VERSION_IMG = 2  # v2: golden permutation for residual splitting
 
 MAGIC_AUD = b"HOAU"
-VERSION_AUD = 1
+VERSION_AUD = 2  # v2: golden permutation for residual splitting
 
 MAGIC_BIN = b"HOBI"
-VERSION_BIN = 1
+VERSION_BIN = 2  # v2: golden permutation for residual splitting
+
+# Golden ratio constants for holographic residual distribution
+PHI = (1.0 + 5.0 ** 0.5) / 2.0
+
+
+# ===================== GOLDEN PERMUTATION CORE =====================
+
+
+def _golden_step(n: int) -> int:
+    """
+    Compute a step 'step' approximately equal to (phi - 1) * n,
+    adjusted so that gcd(step, n) == 1. This guarantees that
+    i -> (i * step) mod n is a full-cycle permutation.
+    """
+    if n <= 1:
+        return 1
+
+    step = max(1, int((PHI - 1.0) * n))
+    g = math.gcd(step, n)
+
+    # If not coprime, nudge step upward until we get gcd == 1
+    # (this loop is very cheap compared to the rest of the codec).
+    guard = 0
+    while g != 1 and guard < 1024 and step < n + 1024:
+        step += 1
+        g = math.gcd(step, n)
+        guard += 1
+
+    if g != 1:
+        # Worst case fallback: step = 1 (identity order),
+        # still a valid permutation but non-aureo.
+        step = 1
+
+    return step
+
+
+def _golden_permutation(n: int) -> np.ndarray:
+    """
+    Golden-ratio-based permutation of indices 0..n-1.
+
+    perm[i] = (i * step) mod n  with step coprime to n and
+    step ≈ (phi - 1) * n. This produces a single cycle that
+    spreads neighbors very uniformly: ideal per-chunk sampling
+    of residual energy.
+    """
+    if n <= 1:
+        return np.zeros(max(n, 0), dtype=np.int64)
+
+    step = _golden_step(n)
+    idx = np.arange(n, dtype=np.int64)
+    perm = (idx * step) % n
+    return perm
 
 
 # ===================== IMAGES =====================
@@ -87,8 +140,10 @@ def encode_image_holo_dir(
     """
     Encode an image into a holographic directory of chunks.
 
-    Each chunk contains a copy of a global thumbnail and a disjoint slice
-    of the residual (detail) information.
+    Each chunk contains a copy of a global thumbnail and a slice
+    of the residual (detail) information. In v2 the residual slice
+    is chosen via a golden-ratio permutation to maximize
+    informational spread across chunks.
     """
     img = load_image(input_path)
     h, w, c = img.shape
@@ -130,8 +185,16 @@ def encode_image_holo_dir(
 
     os.makedirs(out_dir, exist_ok=True)
 
+    N = residual_flat.size
+    perm = _golden_permutation(N) if block_count > 1 else None
+
     for block_id in range(block_count):
-        vals = residual_flat[block_id::block_count]
+        if block_count > 1:
+            idx = perm[block_id::block_count]
+            vals = residual_flat[idx]
+        else:
+            vals = residual_flat
+
         vals_bytes = vals.astype("<i2").tobytes()
         comp_vals = zlib.compress(vals_bytes, level=9)
 
@@ -162,6 +225,8 @@ def decode_image_holo_dir(
 
     If max_chunks is provided, only the first max_chunks chunks are used,
     producing a more degraded but still globally coherent reconstruction.
+
+    Supports both v1 (modular stride) and v2 (golden permutation) layouts.
     """
     chunk_files = sorted(glob.glob(os.path.join(in_dir, "chunk_*.holo")))
     if not chunk_files:
@@ -174,6 +239,8 @@ def decode_image_holo_dir(
     h = w = c = block_count = None
     coarse_up_arr = None
     residual_flat = None
+    perm = None
+    version_used = None
 
     for path in chunk_files:
         with open(path, "rb") as f:
@@ -186,8 +253,8 @@ def decode_image_holo_dir(
             continue
         version = data[off]
         off += 1
-        if version != VERSION_IMG:
-            raise ValueError(f"Unsupported image chunk version in {path}")
+        if version not in (1, VERSION_IMG):
+            raise ValueError(f"Unsupported image chunk version {version} in {path}")
 
         h_i = struct.unpack(">I", data[off: off + 4])[0]
         off += 4
@@ -215,14 +282,26 @@ def decode_image_holo_dir(
             coarse_up = coarse_img.resize((w, h), Image.BICUBIC)
             coarse_up_arr = np.asarray(coarse_up, dtype=np.int16)
             residual_flat = np.zeros(h * w * c, dtype=np.int16)
+            version_used = version
+            if version_used == VERSION_IMG and block_count > 1:
+                perm = _golden_permutation(residual_flat.size)
             first = False
         else:
             if (h_i, w_i, c_i, B_i) != (h, w, c, block_count):
                 raise ValueError(f"Inconsistent image chunk: {path}")
+            if version != version_used:
+                raise ValueError(f"Mixed image chunk versions in {in_dir}")
 
         vals_bytes = zlib.decompress(resid_comp)
         vals = np.frombuffer(vals_bytes, dtype="<i2")
-        residual_flat[block_id::block_count][: len(vals)] = vals
+
+        if version_used == 1 or block_count == 1:
+            # legacy v1 layout: simple modular stride
+            residual_flat[block_id::block_count][: len(vals)] = vals
+        else:
+            # v2: golden permutation layout
+            idx = perm[block_id::block_count]
+            residual_flat[idx[: len(vals)]] = vals
 
     residual = residual_flat.reshape(h, w, c)
     recon_int = coarse_up_arr + residual
@@ -295,7 +374,7 @@ def encode_audio_holo_dir(
     Encode a WAV file into a holographic directory of chunks.
 
     Each chunk carries a coarse downsampled version of the track and a slice
-    of the residual information.
+    of the residual information, distributed via a golden permutation in v2.
     """
     audio, sr, ch = _read_wav_int16(input_wav)
     n_frames = audio.shape[0]
@@ -340,8 +419,16 @@ def encode_audio_holo_dir(
 
     os.makedirs(out_dir, exist_ok=True)
 
+    N = residual_flat.size
+    perm = _golden_permutation(N) if block_count > 1 else None
+
     for block_id in range(block_count):
-        vals = residual_flat[block_id::block_count]
+        if block_count > 1:
+            idx_block = perm[block_id::block_count]
+            vals = residual_flat[idx_block]
+        else:
+            vals = residual_flat
+
         vals_bytes = vals.astype("<i2").tobytes()
         resid_comp = zlib.compress(vals_bytes, level=9)
 
@@ -374,6 +461,8 @@ def decode_audio_holo_dir(
     Decode a WAV file from a holographic directory of chunks.
 
     If max_chunks is provided, only that many chunks are used.
+
+    Supports both v1 (modular stride) and v2 (golden permutation) layouts.
     """
     chunk_files = sorted(glob.glob(os.path.join(in_dir, "chunk_*.holo")))
     if not chunk_files:
@@ -386,6 +475,8 @@ def decode_audio_holo_dir(
     sr = ch = n_frames = block_count = coarse_len = None
     coarse_up = None
     residual_flat = None
+    perm = None
+    version_used = None
 
     for path in chunk_files:
         with open(path, "rb") as f:
@@ -398,8 +489,8 @@ def decode_audio_holo_dir(
             continue
         version = data[off]
         off += 1
-        if version != VERSION_AUD:
-            raise ValueError(f"Unsupported audio chunk version in {path}")
+        if version not in (1, VERSION_AUD):
+            raise ValueError(f"Unsupported audio chunk version {version} in {path}")
         ch_i = data[off]
         off += 1
         sampwidth = data[off]
@@ -452,6 +543,9 @@ def decode_audio_holo_dir(
             coarse_up = np.round(coarse_up).astype(np.int16)
 
             residual_flat = np.zeros(n_frames * ch, dtype=np.int16)
+            version_used = version
+            if version_used == VERSION_AUD and block_count > 1:
+                perm = _golden_permutation(residual_flat.size)
             first = False
         else:
             if (ch_i, sr_i, n_frames_i, block_count_i, coarse_len_i) != (
@@ -462,18 +556,25 @@ def decode_audio_holo_dir(
                 coarse_len,
             ):
                 raise ValueError(f"Inconsistent audio chunk: {path}")
+            if version != version_used:
+                raise ValueError(f"Mixed audio chunk versions in {in_dir}")
 
         vals_bytes = zlib.decompress(resid_comp)
         vals = np.frombuffer(vals_bytes, dtype="<i2").astype(np.int16)
 
-        positions = np.arange(
-            block_id,
-            block_id + len(vals) * block_count,
-            block_count,
-            dtype=np.int64,
-        )
-        positions = positions[positions < residual_flat.size]
-        residual_flat[positions] = vals[: len(positions)]
+        if version_used == 1 or block_count == 1:
+            positions = np.arange(
+                block_id,
+                block_id + len(vals) * block_count,
+                block_count,
+                dtype=np.int64,
+            )
+            positions = positions[positions < residual_flat.size]
+            residual_flat[positions] = vals[: len(positions)]
+        else:
+            idx_block = perm[block_id::block_count]
+            idx_block = idx_block[: len(vals)]
+            residual_flat[idx_block] = vals
 
     residual = residual_flat.reshape(n_frames, ch)
     recon_int = coarse_up.astype(np.int32) + residual.astype(np.int32)
@@ -496,6 +597,8 @@ def encode_binary_holo_dir(
 
     For non-perceptual formats this only provides robustness when *all* chunks
     are present; deleting chunks will typically corrupt the format.
+
+    The residual payload is split via golden permutation in v2.
     """
     with open(input_path, "rb") as f:
         data = f.read()
@@ -531,8 +634,16 @@ def encode_binary_holo_dir(
 
     os.makedirs(out_dir, exist_ok=True)
 
+    N = rest_arr.size
+    perm = _golden_permutation(N) if block_count > 1 else None
+
     for block_id in range(block_count):
-        vals = rest_arr[block_id::block_count]
+        if block_count > 1:
+            idx = perm[block_id::block_count]
+            vals = rest_arr[idx]
+        else:
+            vals = rest_arr
+
         vals_bytes = vals.tobytes()
         comp_vals = zlib.compress(vals_bytes, level=9)
 
@@ -561,6 +672,8 @@ def decode_binary_holo_dir(
     Decode a generic binary file from a holographic directory.
 
     This expects that all chunks are available for a valid reconstruction.
+
+    Supports both v1 (modular stride) and v2 (golden permutation) layouts.
     """
     chunk_files = sorted(glob.glob(os.path.join(in_dir, "chunk_*.holo")))
     if not chunk_files:
@@ -573,6 +686,8 @@ def decode_binary_holo_dir(
     L = block_count = coarse_len = None
     coarse = None
     rest_arr = None
+    perm = None
+    version_used = None
 
     for path in chunk_files:
         with open(path, "rb") as f:
@@ -585,8 +700,8 @@ def decode_binary_holo_dir(
             continue
         version = data[off]
         off += 1
-        if version != VERSION_BIN:
-            raise ValueError(f"Unsupported binary chunk version in {path}")
+        if version not in (1, VERSION_BIN):
+            raise ValueError(f"Unsupported binary chunk version {version} in {path}")
 
         L_i = struct.unpack(">Q", data[off: off + 8])[0]
         off += 8
@@ -612,14 +727,24 @@ def decode_binary_holo_dir(
             coarse = zlib.decompress(coarse_comp)
             rest_len = L - coarse_len
             rest_arr = np.zeros(rest_len, dtype=np.uint8)
+            version_used = version
+            if version_used == VERSION_BIN and block_count > 1 and rest_len > 0:
+                perm = _golden_permutation(rest_len)
             first = False
         else:
             if (L_i, B_i, coarse_len_i) != (L, block_count, coarse_len):
                 raise ValueError(f"Inconsistent binary chunk in {path}")
+            if version != version_used:
+                raise ValueError(f"Mixed binary chunk versions in {in_dir}")
 
         vals_bytes = zlib.decompress(resid_comp)
         vals = np.frombuffer(vals_bytes, dtype=np.uint8)
-        rest_arr[block_id::block_count][: len(vals)] = vals
+
+        if version_used == 1 or block_count == 1:
+            rest_arr[block_id::block_count][: len(vals)] = vals
+        else:
+            idx = perm[block_id::block_count]
+            rest_arr[idx[: len(vals)]] = vals
 
     out = bytearray(L)
     out[:coarse_len] = coarse[:coarse_len]
