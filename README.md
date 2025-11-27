@@ -15,6 +15,14 @@ Internally, Holo.Codec is entirely digital, but its behaviour under disturbance 
 
 <img width="1024" height="1024" alt="drone" src="https://github.com/user-attachments/assets/f1db4f1c-8398-4670-9e35-c5a56e07283e" />
 
+Why Holo.Codec ?
+
+- Analog: degrades nicely, but doesn’t speak digital.
+
+- Classical digital: speaks digital perfectly, but degrades badly.
+
+- Holo.Codec: a digital representation that degrades like “well-behaved” analog, while keeping all the digital tools (robotics, AI, crypto, networking).
+
 
 Any subset of the transmitted chunks reconstructs a **usable** version of the content.  
 More chunks ⇒ more detail. Losing chunks never means “no image” or “no audio”, only
