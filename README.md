@@ -106,8 +106,7 @@ This prototype is implemented in Python and focuses on **perceptual media**:
   reconstruction to a viewable image (PNG).  
 - Audio: WAV PCM 16-bit or 24-bit input, holographic `.holo` directory,  
   reconstruction to WAV 16-bit.  
-- Binary files (including PDF, DOCX, etc.): experimental support aimed at
-  “all-chunks-present” round-trip; there is *no* structural resilience if you
+experimental support aimed at “all-chunks-present” round-trip; there is *no* structural resilience if you
   delete chunks (formats like PDF do not degrade gracefully).
 
 The codec is intentionally simple:
@@ -119,6 +118,7 @@ The codec is intentionally simple:
 
 This makes the structure easy to read and modify, and keeps the mathematics simple.
 It is **not** yet tuned for optimal compression; it is a research prototype.
+<img width="1980" height="1180" alt="graph" src="https://github.com/user-attachments/assets/d397beda-d7f7-43af-874d-8f768efa9391" />
 
 ---
 
