@@ -20,6 +20,8 @@ Any subset of the transmitted chunks reconstructs a **usable** version of the co
 More chunks ⇒ more detail. Losing chunks never means “no image” or “no audio”, only
 a smooth, graceful degradation in quality.
 
+<img width="1980" height="1180" alt="graph" src="https://github.com/user-attachments/assets/d397beda-d7f7-43af-874d-8f768efa9391" />
+
 
 ---
 
@@ -118,7 +120,6 @@ The codec is intentionally simple:
 
 This makes the structure easy to read and modify, and keeps the mathematics simple.
 It is **not** yet tuned for optimal compression; it is a research prototype.
-<img width="1980" height="1180" alt="graph" src="https://github.com/user-attachments/assets/d397beda-d7f7-43af-874d-8f768efa9391" />
 
 ---
 
