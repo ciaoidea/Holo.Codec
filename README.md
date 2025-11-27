@@ -130,7 +130,7 @@ It is **not** yet tuned for optimal compression; it is a research prototype.
 
 ---
 
-## Amateur packet radio and extreme RF links
+## Amateur packet radio and extreme RF links (IK2TYW Project)
 
 Holo.Codec sits above classical amateur packet-radio protocols (AX.25, KISS, VARA, etc.).
 The radio link still transports ordinary binary frames; Holo.Codec only changes how
