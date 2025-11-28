@@ -242,6 +242,3 @@ The project header in `holo.py` references a LICENSE file. Redistribution and mo
 
 If you use this codec for experiments on emergency or deep‑space communication, treat it as a research tool rather than a formally verified system: it is designed to explore the trade‑off between redundancy, graceful degradation, and perceptual quality per bit, not to replace proven mission‑critical telemetry stacks.
 
-```
-::contentReference[oaicite:7]{index=7}
-```
