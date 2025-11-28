@@ -1,6 +1,5 @@
 # Holo.Codec
-# Holographic Media Codec for Extreme Networks
-## Robust holographic audio-vision that never breaks.
+# Robust Holographic Media Codec for Extreme Networks
 
 ````markdown
 # Holo.Codec – Holographic media codec for extreme connectivity
