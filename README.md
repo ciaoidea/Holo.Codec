@@ -1,7 +1,3 @@
-# Holo.Codec
-# Robust Holographic Media Codec for Extreme Networks
-
-````markdown
 # Holo.Codec – Holographic media codec for extreme connectivity
 
 Holo.Codec is a small experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
