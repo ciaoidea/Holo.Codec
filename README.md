@@ -8,7 +8,7 @@ If you only receive a fraction, you still get a coherent but degraded version: a
 
 This repository is built around two main components:
 
-- `holo.py` – the core holographic codec for images, audio, and generic binaries  
+- `holo.py` – the core holographic codec for images and audio 
 - `holo.net.py` – a UDP‑based transport that pushes holographic chunks across extreme networks, with parameters tuned from LAN up to deep‑space‑style links
 
 ---
