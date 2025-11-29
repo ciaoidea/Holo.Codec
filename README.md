@@ -81,28 +81,6 @@ With all chunks, the reconstructed audio is very close to the original PCM. With
 
 ---
 
-## Holographic binary codec
-
-Binary files are treated differently, since they do not have a perceptual notion of “slightly degraded but still useful”. :contentReference[oaicite:3]{index=3}  
-
-Encoding (`encode_binary_holo_dir`):
-
-- The file is split into a coarse prefix and the remaining bytes.  
-- The coarse prefix is compressed once and stored in every chunk.  
-- The remaining bytes are mapped into a NumPy `uint8` array, and a golden permutation is applied to distribute bytes across blocks.  
-- Each block gets a slice of the permuted bytes, which is zlib‑compressed and stored as residual.
-
-Decoding (`decode_binary_holo_dir`):
-
-- All binary chunks are scanned; metadata and layout are verified.  
-- The coarse prefix is reconstructed from the compressed copy.  
-- The permuted residual is reassembled from any subset of available chunks.  
-- The original byte sequence is reconstructed by inverting the permutation and concatenating coarse and residual.
-
-Binary formats usually require all bytes to be correct, so partial chunk sets are not expected to produce meaningful files. The holographic layout still gives robustness against isolated bit errors and lets you detect inconsistencies, but graceful degradation is primarily meaningful for images and audio.
-
----
-
 ## Stacking images
 
 Holo.Codec also supports stacking multiple images into a deeper exposure before encoding. :contentReference[oaicite:4]{index=4}  
