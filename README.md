@@ -225,6 +225,7 @@ HNet is not yet shipped as a concrete Python module in this repository. It is th
 ## Design goals and resilience
 
 Holographix was not built as a toy format.  
+
 The original goal is resilience: keep useful information flowing when everything else in the stack is failing – in emergencies, on weak radios, on deep‑space links, or in ad‑hoc swarms of small robots.
 
 The codec and transport are meant to behave more like a living tissue than a brittle protocol. When bandwidth shrinks or packets vanish, they do not stop; they degrade gracefully, recombine whatever fragments are available, and try to maintain a coherent picture of the world from partial evidence. Physical nodes can appear, disappear, or move, but their holographic chunks remain in the field and can still be used by the rest of the network, the way pheromone trails guide ants until they evaporate.
