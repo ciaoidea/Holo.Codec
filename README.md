@@ -64,7 +64,7 @@ The codec also exposes an image stacking helper. Multiple frames of the same sce
 
 <img width="1184" height="864" alt="image" src="https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4" />
 
-<img width="1184" height="864" alt="image" src="[https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4](https://github.com/ciaoidea/Holographix.io/blob/main/simulation/ezgif-7a008ed1a76b8024.gif)" />
+<img width="1184" height="864" alt="image" src="https://github.com/ciaoidea/Holographix.io/blob/main/simulation/ezgif-7a008ed1a76b8024.gif" />
 
 
 ---
