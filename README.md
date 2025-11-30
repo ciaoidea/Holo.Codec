@@ -25,6 +25,8 @@ Together, these layers are designed as a next‑generation perceptual fabric for
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cf573e19-ec2c-4e24-9c26-db8515d514f2" />
 
+<img width="645" height="413" alt="image" src="https://github.com/user-attachments/assets/42436e14-c1ec-49b6-97d6-ae157dad7b69" />
+
 
 ---
 
@@ -216,8 +218,6 @@ Each URI is mapped to a binary content identifier, for example by hashing the UR
 When chunks come from multiple sensors, the mechanism behaves like a distributed synthetic aperture. Each device sees the scene from its own perspective and contributes its own holographic fragments; the network integrates them into a deeper, higher‑resolution field than any single instrument could produce alone.
 
 HNet is not yet shipped as a concrete Python module in this repository. It is the natural next step built on top of `holo.py` and `holo.net.py`: a daemon that maintains a mapping from URIs to content IDs and local `.holo` directories, announces interests in specific objects, and uses the existing codec and transport to exchange and stack holographic chunks.
-
-<img width="645" height="413" alt="image" src="https://github.com/user-attachments/assets/42436e14-c1ec-49b6-97d6-ae157dad7b69" />
 
 
 ---
