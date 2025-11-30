@@ -207,15 +207,18 @@ The project also sketches a higher‑level layer called HNet. The idea is to tre
 
 Instead of pointing at IP addresses and ports, applications would talk about URIs like
 
-`holo://mars/sol-1234/navcam/image-0042`
-`holo://dog/001`
-`holo://emergency/flood-zone-7/snapshot-03`
+- `holo://mars/sol-1234/navcam/image-0042`
+- `holo://dog/001`
+- `holo://emergency/flood-zone-7/snapshot-03`
 
 Each URI is mapped to a binary content identifier, for example by hashing the URI string plus codec version. Any node that holds chunks tagged with that content identifier can help reconstruct the object. Nodes cache and re‑serve chunks as they pass through, and a function like `stack()` can align and fuse holographic chunks from many sources into increasingly sharp reconstructions of the same underlying field.
 
 When chunks come from multiple sensors, the mechanism behaves like a distributed synthetic aperture. Each device sees the scene from its own perspective and contributes its own holographic fragments; the network integrates them into a deeper, higher‑resolution field than any single instrument could produce alone.
 
 HNet is not yet shipped as a concrete Python module in this repository. It is the natural next step built on top of `holo.py` and `holo.net.py`: a daemon that maintains a mapping from URIs to content IDs and local `.holo` directories, announces interests in specific objects, and uses the existing codec and transport to exchange and stack holographic chunks.
+
+<img width="645" height="413" alt="image" src="https://github.com/user-attachments/assets/42436e14-c1ec-49b6-97d6-ae157dad7b69" />
+
 
 ---
 
