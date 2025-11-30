@@ -63,7 +63,7 @@ The classical golden ratio φ is then φ = 1 / x = (1 + sqrt(5)) / 2 ≈ 1.618, 
 <img width="591" height="256" alt="image" src="https://github.com/user-attachments/assets/235053ab-f4d8-4006-b033-16dac0e8ea9b" />
 
 
-. It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
+It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
 
 `perm[i] = (i * step) mod N`
 
