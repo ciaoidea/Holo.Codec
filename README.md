@@ -2,7 +2,9 @@
 # Holographic media and networking for extreme connectivity
 
 [Holographix.io](https://www.holographix.io)
- is an experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
+is a small holographic media and networking stack that treats data more like a field than a fragile file. Images, audio and sensor logs are exploded into overlapping holographic chunks that any node can cache, share and recombine, so the network behaves less like a rigid pipe between two endpoints and more like a distributed nervous system that keeps a coherent picture even when pieces go missing.
+
+Instead of asking a single server for a perfect copy, robots, probes and edge devices contribute and consume fragments of shared “concept fields” and “organized experience fields”. Physical nodes become fuzzy participants in a larger perceptual fabric: each one holds only partial evidence, but the superposition of their chunks yields robust, adaptive awareness across the system, whether the underlying links are clean fibre, noisy radio, or deep‑space relays.
 
 Instead of compressing a file into one fragile bitstream that must arrive perfectly, Holographix turns the file into many small *holographic* chunks. Each chunk carries a global low‑resolution view of the whole content plus a different slice of missing detail.  
 
