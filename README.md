@@ -18,6 +18,8 @@ The project is organised around two working components and one experimental one:
 
 Together, these layers are designed as a next‑generation perceptual fabric for robots and other embodied agents with rich sensory awareness of their environment.
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cf573e19-ec2c-4e24-9c26-db8515d514f2" />
+
 ---
 
 ## How the holographic codec works
@@ -58,6 +60,8 @@ Audio is handled as 16‑ or 24‑bit PCM WAV (24‑bit is internally converted 
 For generic binaries the same mechanism is applied to a coarse prefix plus the remaining bytes. This improves robustness to lost chunks but, obviously, you do not get graceful perceptual degradation: missing chunks usually mean a corrupted format. The binary mode is mainly there as a robustness and testing tool.
 
 The codec also exposes an image stacking helper. Multiple frames of the same scene can be averaged pixel‑wise into a single deeper exposure and *that* image can then be encoded holographically. Each holographic chunk then carries a view of the stacked frame, so the network can gradually accumulate more photons from many noisy captures.
+
+<img width="1184" height="864" alt="image" src="https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4" />
 
 ---
 
