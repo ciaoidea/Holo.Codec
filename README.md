@@ -1,171 +1,148 @@
-# Holo.Codec – Holographic media codec for extreme connectivity
+# Holographix – Holographic media and networking for extreme connectivity
 
-Holo.Codec is a small experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
-Instead of compressing a file into one monolithic bitstream that breaks completely if you lose packets, Holo.Codec turns media into many small “holographic” chunks. Each chunk contains a global low‑resolution view of the whole content plus a different slice of the missing detail.
+Holographix is an experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
 
-If you receive all the chunks you get a reconstruction that matches the original.  
-If you only receive a fraction, you still get a coherent but degraded version: a slightly blurred image instead of a corrupt file, a softer audio track instead of silence. :contentReference[oaicite:0]{index=0}  
+Instead of compressing a file into one fragile bitstream that must arrive perfectly, Holographix turns the file into many small *holographic* chunks. Each chunk carries a global low‑resolution view of the whole content plus a different slice of missing detail.  
 
-This repository is built around two main components:
+If all chunks arrive, you reconstruct something very close to the original.  
+If only a fraction survives, you still get a coherent but degraded version: a slightly blurred image instead of a corrupt JPEG, a softer audio track instead of silence.
 
-- `holo.py` – the core holographic codec for images and audio 
-- `holo.net.py` – a UDP‑based transport that pushes holographic chunks across extreme networks, with parameters tuned from LAN up to deep‑space‑style links
+The project is organised around two working components and one experimental one:
 
----
-
-## Core idea
-
-The codec is built on a very simple concept applied carefully:
-
-1. Rebuild a low‑resolution or low‑rate “coarse” representation of the whole signal.
-2. Compute the residual (original minus coarse).
-3. Distribute the residual across many chunks using a golden‑ratio‑based permutation so that each chunk carries a fair sample of detail spread over the whole file.
-4. Store the coarse representation inside each chunk together with one residual slice.
-
-On decoding, the coarse representation is reconstructed or upsampled once, then all residual slices that happen to be available are accumulated back into the right positions. Any missing slices simply mean that part of the residual is zero, so the decoder falls back to the coarse version in those places.
-
-The result is that every chunk “knows” something about the entire signal. Losing chunks lowers resolution or SNR but does not localize damage to specific regions.
+**holo.py** – the holographic media codec for images, audio and generic binaries  
+**holo.net.py** – a UDP transport that pushes holographic chunks across extreme networks  
+**HNet (planned)** – a content‑centric layer that treats sets of chunks as shared “concept fields” identified by URIs such as `holo://mars/sol-1234/navcam/image-0042`
 
 ---
 
-## Holographic image codec
+## How the holographic codec works
 
-Images are handled in RGB uint8 using Pillow and NumPy. :contentReference[oaicite:1]{index=1}  
+The codec always follows the same pattern, whether the input is an image or an audio track.
 
-Encoding (`encode_image_holo_dir`):
+It first builds a coarse global approximation of the whole signal.  
+For images this is a thumbnail resized back to the original resolution.  
+For audio this is a track sampled at a small number of frames and linearly interpolated back to full length.
 
-- The image is loaded and converted to RGB.  
-- A global thumbnail is created by resizing the full image down to a small side (for example 64 pixels) with bicubic interpolation.  
-- The thumbnail is upscaled back to the original size to form a coarse approximation of the image.  
-- The residual is computed as `residual = original - coarse_up`, stored as int16 to keep the sign.  
-- The residual is flattened into a one‑dimensional array of length `N = h * w * c`.  
-- A golden permutation is built: a single‑cycle permutation of `0..N-1` obtained using a step close to `(phi - 1) * N`, adjusted to be coprime with `N` (where `phi` is the golden ratio).  
-- The residual is split across `B` blocks by taking indices `perm[block_id :: B]`, so each block gets a well‑spread sample of the residual.  
-- For each block, the residual slice is zlib‑compressed and packaged together with the thumbnail in a small binary file `chunk_XXXX.holo` that carries header, coarse PNG bytes, and compressed residual.
+Then it computes the residual
 
-Decoding (`decode_image_holo_dir`):
+`residual = original - coarse_up`
 
-- All available `chunk_*.holo` files in the directory are scanned.  
-- From the first valid chunk, the decoder extracts dimensions, number of channels, number of blocks, version, and the thumbnail.  
-- The thumbnail is upscaled to the original resolution to form the coarse image.  
-- An array `residual_flat` is allocated and filled with zeros.  
-- For each chunk, the residual slice is decompressed. Its positions in `residual_flat` are recovered using the same golden permutation and block index; values are written into their slots.  
-- Once all chunks are processed, `residual_flat` is reshaped to `(h, w, c)` and summed with the coarse image, with clipping to `[0, 255]`.  
+in 16‑bit integer space. This residual holds all the fine detail that is missing from the coarse view.
 
-If you have all chunks, the reconstruction closely matches the original.  
-If you have only some chunks, you still get a globally coherent image: the coarse structure comes from the thumbnail, the available chunks sharpen it wherever residual is known.
+The residual array is flattened to a vector of length `N`. Instead of cutting this vector into contiguous blocks, the codec uses a golden‑ratio based permutation. It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
 
----
+`perm[i] = (i * step) mod N`
 
-## Holographic audio codec
+This produces a single cycle that visits every index exactly once while spreading neighbours very evenly.  
 
-The audio side uses 16‑ or 24‑bit PCM WAV as input. 24‑bit signals are down‑converted to 16‑bit internally for a simpler residual representation. :contentReference[oaicite:2]{index=2}  
+If you choose `B` chunks, chunk `b` takes the residual values at positions
 
-Encoding (`encode_audio_holo_dir`):
+`perm[b], perm[b + B], perm[b + 2B], ...`
 
-- The WAV is read into an `int16` array of shape `(frames, channels)`.  
-- A coarse track is built by selecting a reduced number of frames (for example 2048) and then linearly interpolating them back to full length.  
-- The residual is computed as `audio - coarse_up` in 16‑bit space.  
-- The coarse track is compressed with zlib and stored once per chunk.  
-- The residual is flattened and split across blocks with the same golden permutation strategy as images, then each residual slice is compressed and written to `chunk_XXXX.holo` with an audio header.
+so each chunk gets samples from all over the image or waveform, not from a single region.
 
-Decoding (`decode_audio_holo_dir`):
+Each chunk is then written as a small `.holo` file. Inside there is a static coarse representation (PNG for images, compressed int16 for audio) plus one compressed residual slice. All chunks share the same coarse part and each one carries a different slice of residual detail.
 
-- All audio chunks are scanned.  
-- From the first valid chunk the decoder recovers sample rate, channels, total frames, and coarse length, then rebuilds the coarse track by decompressing and linearly interpolating.  
-- A residual array is allocated and filled with zeros.  
-- For each chunk, the residual slice is decompressed and written into its positions according to version and permutation.  
-- Residual and coarse are summed, clipped to the legal `int16` range, and written back as a WAV file.
+Decoding inverts this process. The decoder opens the first valid chunk, recovers dimensions and codec parameters, reconstructs the coarse approximation and allocates a flat residual array filled with zeros. It then regenerates the same golden permutation and, for every available chunk, decompresses the residual slice and writes values back into their positions. Missing slices simply leave zeros. Finally it reshapes the residual to the original shape and sums it with the coarse image or track, clipping into the valid range.
 
-With all chunks, the reconstructed audio is very close to the original PCM. With fewer chunks you effectively hear something closer to the coarse approximation plus a subset of the missing detail; the result is softer but globally meaningful.
+With all chunks present you get a reconstruction that closely matches the original media. With fewer chunks you still get a global percept: the coarse thumbnail provides the structure, while whatever residual happens to be known sharpens details where possible.
+
+Images are handled using RGB uint8 arrays via Pillow and NumPy.  
+Audio is handled as 16‑ or 24‑bit PCM WAV (24‑bit is internally converted to 16‑bit).
+
+For generic binaries the same mechanism is applied to a coarse prefix plus the remaining bytes. This improves robustness to lost chunks but, obviously, you do not get graceful perceptual degradation: missing chunks usually mean a corrupted format. The binary mode is mainly there as a robustness and testing tool.
+
+The codec also exposes an image stacking helper. Multiple frames of the same scene can be averaged pixel‑wise into a single deeper exposure and *that* image can then be encoded holographically. Each holographic chunk then carries a view of the stacked frame, so the network can gradually accumulate more photons from many noisy captures.
 
 ---
 
-## Stacking images
+## Installation
 
-Holo.Codec also supports stacking multiple images into a deeper exposure before encoding. :contentReference[oaicite:4]{index=4}  
+You need a recent Python 3 interpreter and a few standard scientific libraries.
 
-The helper `stack_images_average` takes several frames with the same resolution, averages them pixel‑wise into a single image, and saves it. The resulting “stacked” frame has lower noise and higher effective dynamic range, similar to how a telescope integrates light over time. You can then encode this stacked image holographically, so every chunk carries a view of the deep combined frame.
-
-There is also a `--stack` mode in `holo.py` that automates this process for PNG input.
-
-Example:
+Clone the repository and create a virtual environment:
 
 ```bash
-python3 holo.py --stack 32 frame1.png frame2.png frame3.png
+git clone https://github.com/ciaoidea/Holo.Codec.git
+cd Holo.Codec
+
+python3 -m venv .venv
+source .venv/bin/activate      # on Windows: .venv\Scripts\activate
 ````
 
-This stacks the PNGs into `frame1_stack.png` and then encodes that image into `frame1_stack.png.holo` with a target chunk size of 32 KB.
+Install the required Python packages:
+
+```bash
+pip install numpy pillow
+```
+
+The standard library `wave` module is used for audio input/output.
+The networking layer only depends on `socket`, `struct` and other standard modules.
 
 ---
 
-## Stand‑alone codec usage (`holo.py`)
+## Quick start: local holographic codec (`holo.py`)
 
-The stand‑alone codec script supports a simple dual behaviour: encode when given a regular file, decode when given a `.holo` directory. 
+The script `holo.py` behaves in a dual way:
 
-Basic examples:
+If you give it a normal file name, it encodes that file into a holographic directory `<file>.holo`.
+If you give it a `.holo` directory, it decodes it back to the original file format.
+
+### Encode an image, audio file, or generic binary
 
 ```bash
-# encode an image, audio or binary into a .holo directory
-python3 holo.py original_file         # default chunk sizing
-python3 holo.py original_file 32      # target ~32 KB per chunk
+# default chunk sizing
+python3 holo.py image.png
 
-# decode from a .holo directory back to the original file
-python3 holo.py original_file.holo
+# target chunks around 32 KB
+python3 holo.py image.png 32
 
-# stack multiple PNG frames then encode holographically
+# audio
+python3 holo.py track.wav 32
+
+# generic binary (falls back to binary mode)
+python3 holo.py archive.bin 32
+```
+
+After running one of these commands you will find a directory named `image.png.holo`, `track.wav.holo`, and so on. Inside there are the `chunk_XXXX.holo` files that carry the holographic representation of the original object.
+
+The codec automatically detects the mode from the file extension.
+Supported image formats include PNG, JPEG, BMP, GIF, TIFF.
+WAV files must be PCM 16‑bit or 24‑bit.
+
+### Decode from a `.holo` directory
+
+```bash
+# reconstruct image.png from image.png.holo
+python3 holo.py image.png.holo
+
+# reconstruct track.wav from track.wav.holo
+python3 holo.py track.wav.holo
+```
+
+If the `.holo` directory name ends with the original file name plus `.holo`, the decoder restores that name by stripping the suffix. Otherwise it writes a file named `<dir>_dec`.
+
+To experiment with graceful degradation you can manually delete some `chunk_XXXX.holo` files from the directory and run the decoder again. Fewer chunks produce a blurrier but still globally coherent reconstruction.
+
+### Stack multiple image frames before encoding
+
+If you have multiple frames of the same scene and want to integrate them into a deeper exposure, use the `--stack` mode:
+
+```bash
 python3 holo.py --stack 32 frame1.png frame2.png frame3.png
 ```
 
-The codec infers the mode (image, audio, binary) either from the file extension or from the magic bytes stored inside the holographic chunks.
+This command averages the frames pixel‑wise into `frame1_stack.png`, then encodes that stacked image into `frame1_stack.png.holo` with chunks around 32 KB. Each chunk now carries a view of the stacked, low‑noise frame.
 
 ---
 
-## HoloNet: holographic UDP transport (`holo.net.py`)
+## Quick start: holographic UDP transport (`holo.net.py`)
 
-While `holo.py` works on local files and directories, `holo.net.py` adds a simple network layer that sends and receives holographic chunks over UDP. The network layer never touches the codec math: it delegates all encoding and decoding to `holo.py` and focuses solely on chunk transport.
+While `holo.py` works on local files, `holo.net.py` adds a simple UDP transport for moving holographic chunks across real networks. The network layer never touches the codec math; it relies entirely on `holo.py` to encode and decode and treats each chunk file as an opaque payload.
 
-The basic design is as follows.
+The tool has two sub‑commands, `tx` for transmit and `rx` for receive.
 
-On transmit (“tx” mode):
-
-* The input file is encoded into `<file>.holo` using `holo.py`.
-* Each `chunk_XXXX.holo` file is treated as an opaque payload.
-* A custom HNET header (magic, version, packet type, transfer id, total chunk count, chunk index, segment index, segment count) is prepended.
-* The chunk data is sliced into datagrams small enough to fit the configured UDP payload size.
-* Each datagram is sent via `socket(AF_INET, SOCK_DGRAM)` to the chosen host and port.
-* At the beginning of each loop over chunks, a META packet is sent containing the file name and total chunk count. This allows receivers that start late to discover the name and layout.
-* The local `<file>.holo` directory is treated as temporary and removed when the transmission finishes.
-
-On receive (“rx” mode):
-
-* UDP packets are read from the configured port, subject to a maximum packet size and an idle timeout.
-* META packets create or update a `TransferState` structure with transfer id, total chunk count, file name, and holographic directory. A temporary directory `transfer_<id>.holo` is created at first, then renamed to `<filename>.holo` when the real name is known.
-* DATA packets are assembled into complete chunk files using the segment indices stored in the HNET header.
-* As chunks are completed, they are written to the holographic directory using the same `chunk_XXXX.holo` naming convention as `holo.py`.
-* Once the receiver decides to stop (for example because of idle timeout), it asks `holo.py` to decode the holographic directory using all available chunks, either in best‑effort mode (always decode with whatever is present) or in strict mode (only decode when all chunks are present).
-* After a successful decode, the temporary `.holo` directory is removed and only the reconstructed file remains.
-
-Because every chunk contains a thumbnail or coarse version plus a different slice of residual, the network layer remains agnostic to the type of media. Whatever fraction of chunks survives the network path is enough for some level of reconstruction.
-
----
-
-## HoloNet command‑line interface
-
-The network script is built as a small command‑line tool with two sub‑commands: `tx` for transmit and `rx` for receive.
-
-Transmit example:
-
-```bash
-python3 holo.net.py tx image.png 192.168.1.50 \
-    --port 5000 \
-    --chunk-kb 32 \
-    --loops 5 \
-    --payload 1200 \
-    --delay 0.002
-```
-
-Receive example:
+Open a receiver in one terminal:
 
 ```bash
 python3 holo.net.py rx \
@@ -176,40 +153,60 @@ python3 holo.net.py rx \
     --decode-mode best
 ```
 
-Parameters are there so you can adapt to very different environments.
+This listens on UDP port 5000, accepts packets up to the maximum UDP payload, and waits up to 60 seconds of silence before attempting reconstruction. In `best` mode it always decodes with whatever chunks are present.
 
-On a clean LAN you might use larger payloads (around 1400 bytes), fewer loops, and a very small delay.
-On a noisy radio or deep‑space‑style link you can shrink payload size to match the physical MTU, increase the number of loops to add redundancy, and space packets out with a larger delay so that the physical modem or TNC is not overwhelmed.
+Then, from another terminal or machine, send a file:
 
-The receiver’s idle timeout controls how long it keeps listening after the last packet before attempting reconstruction. In best‑effort mode it will always try to decode with whatever chunks are present and report the fraction of chunks used. In strict mode it will only decode when the number of completed chunks matches the advertised total.
+```bash
+python3 holo.net.py tx image.png 192.168.1.50 \
+    --port 5000 \
+    --chunk-kb 32 \
+    --loops 5 \
+    --payload 1200 \
+    --delay 0.002
+```
+
+In `tx` mode the tool first calls the codec to create `image.png.holo`. It then shuffles the chunk order, slices each chunk into segments that fit into the requested payload size, prepends an HNET header and sends the datagrams to the requested host and port.
+
+Before each full pass over the chunks, a META packet is broadcast with the file name and total chunk count. This allows receivers that start listening mid‑transfer to learn what is being sent.
+
+Once the last loop completes, the temporary `.holo` directory on the sender is deleted.
+
+On the receiver side, as segments arrive they are grouped into complete chunks. Completed chunks are written to a temporary `.holo` directory that mirrors the codec layout. When the idle timeout fires, the receiver calls back into `holo.py` and asks it to decode the directory using all available chunks; in strict mode it only does so if the number of completed chunks matches the announced total.
+
+The parameters let you adapt to many environments. Large payloads and few loops with a very small delay work well on a clean LAN. Small payloads, more loops and a larger delay are better suited to noisy radio links or deep‑space style channels where bit errors, MTU limits and modem buffering all matter.
 
 ---
 
-## Adapting to extreme networks
+## Conceptual third layer: HNet (Holographic Concept Network)
 
-The codec and HoloNet transport are deliberately minimal: they rely on the holographic layout rather than heavy transport‑layer machinery. That makes them well suited as an application layer on top of very different network substrates:
+The codec and the UDP transport already give you an end‑to‑end path from a local file to a reconstructed file at the other end, with graceful degradation built in. This is still host‑centric: a sender addresses a receiver and ships a file.
 
-classical IP networks over Ethernet or Wi‑Fi,
-IP carried over AX.25 packet radio links,
-or simulated deep‑space channels where loss, latency, and bit rate are all extreme.
+The project also sketches a higher‑level layer called HNet. The idea is to treat holographic chunk clouds as named objects in a content‑centric network.
 
-In all these cases the approach is to treat whatever comes from below as a best‑effort datagram channel. HoloNet does not demand that every packet arrives. Instead it exploits the golden permutation and the coarse‑plus‑residual structure to get the highest perceptual quality it can from the bits that survive.
+Instead of pointing at IP addresses and ports, applications would talk about URIs like
 
-The codec itself remains the same; only the HoloNet parameters change as you move from a local lab network to an “interstellar” one.
+`holo://mars/sol-1234/navcam/image-0042`
+`holo://dog/001`
+`holo://emergency/flood-zone-7/snapshot-03`
+
+Each URI is mapped to a binary content identifier, for example by hashing the URI string plus codec version. Any node that holds chunks tagged with that content identifier can help reconstruct the object. Nodes cache and re‑serve chunks as they pass through, and a function like `stack()` can align and fuse holographic chunks from many sources into increasingly sharp reconstructions of the same underlying field.
+
+When chunks come from multiple sensors, the mechanism behaves like a distributed synthetic aperture. Each device sees the scene from its own perspective and contributes its own holographic fragments; the network integrates them into a deeper, higher‑resolution field than any single instrument could produce alone.
+
+HNet is not yet shipped as a concrete Python module in this repository. It is the natural next step built on top of `holo.py` and `holo.net.py`: a daemon that maintains a mapping from URIs to content IDs and local `.holo` directories, announces interests in specific objects, and uses the existing codec and transport to exchange and stack holographic chunks.
 
 ---
 
-## Dependencies and license
+## Design caveats and intended use
 
-The core codec requires Python 3 and a few standard scientific and imaging libraries:
+The implementation is deliberately small and transparent. The golden‑ratio permutation, the residual representation and the UDP transport are all written to be easy to inspect and modify rather than heavily optimised.
 
-NumPy
-Pillow
-The standard `wave` module for PCM audio I/O
+You should treat Holographix as a research tool. It is meant to explore how much perceptual quality you can squeeze out of very few bits, how to make media degrade gracefully, and how to build more resilient communication patterns. It is **not** a formally verified telemetry system and should not be used as the sole critical path for safety‑critical missions without an independent, proven stack alongside it.
 
-The network layer relies only on the Python standard library (`socket`, `struct`, etc.). If you build a GUI around it, you may want an additional toolkit such as PyQt, but the codec itself is independent from any GUI framework.
+---
 
-The project header in `holo.py` references a LICENSE file. Redistribution and modification are governed by the terms described there. 
+## License
 
-If you use this codec for experiments on emergency or deep‑space communication, treat it as a research tool rather than a formally verified system: it is designed to explore the trade‑off between redundancy, graceful degradation, and perceptual quality per bit, not to replace proven mission‑critical telemetry stacks.
+The project header in `holo.py` refers to the `LICENSE` file in this repository. Redistribution and modification are governed by the terms described there.
 
