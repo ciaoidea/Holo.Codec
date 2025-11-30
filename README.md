@@ -1,4 +1,5 @@
-# Holographix – Holographic media and networking for extreme connectivity
+# Holographix 
+# Holographic media and networking for extreme connectivity
 
 Holographix is an experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
 
