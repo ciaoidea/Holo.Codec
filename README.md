@@ -1,7 +1,8 @@
 # Holographix.io 
 # Holographic media and networking for extreme connectivity
 
-Holographix is an experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
+[Holographix.io](https://www.holographix.io)
+ is an experimental codec and transport layer designed for situations where the network is unreliable, extremely slow, or both.  
 
 Instead of compressing a file into one fragile bitstream that must arrive perfectly, Holographix turns the file into many small *holographic* chunks. Each chunk carries a global low‑resolution view of the whole content plus a different slice of missing detail.  
 
