@@ -12,7 +12,7 @@ The project is organised around two working components and one experimental one:
 
 **holo.py** – the holographic media codec for images, audio and generic binaries  
 **holo.net.py** – a UDP transport that pushes holographic chunks across extreme networks  
-**HNet (planned)** – a content‑centric layer that treats sets of chunks as shared “concept fields” identified by URIs such as `holo://mars/sol-1234/navcam/image-0042`
+**HNet (planned)** – a content‑centric layer that treats sets of chunks as shared holographic “concept fields” and “organized experience fields”, identified by URIs such as `holo://mars/sol-1234/navcam/image-0042`, designed as a next‑generation sensory substrate for distributed robots and embodied AI systems with integrated awareness of their environment.
 
 ---
 
