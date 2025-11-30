@@ -222,11 +222,16 @@ HNet is not yet shipped as a concrete Python module in this repository. It is th
 
 ---
 
-## Design caveats and intended use
+## Design goals and resilience
 
-The implementation is deliberately small and transparent. The golden‑ratio permutation, the residual representation and the UDP transport are all written to be easy to inspect and modify rather than heavily optimised.
+Holographix was not built as a toy format.  
+The original goal is resilience: keep useful information flowing when everything else in the stack is failing – in emergencies, on weak radios, on deep‑space links, or in ad‑hoc swarms of small robots.
 
-You should treat Holographix as a research tool. It is meant to explore how much perceptual quality you can squeeze out of very few bits, how to make media degrade gracefully, and how to build more resilient communication patterns. It is **not** a formally verified telemetry system and should not be used as the sole critical path for safety‑critical missions without an independent, proven stack alongside it.
+The codec and transport are meant to behave more like a living tissue than a brittle protocol. When bandwidth shrinks or packets vanish, they do not stop; they degrade gracefully, recombine whatever fragments are available, and try to maintain a coherent picture of the world from partial evidence. Physical nodes can appear, disappear, or move, but their holographic chunks remain in the field and can still be used by the rest of the network, the way pheromone trails guide ants until they evaporate.
+
+This repository is the reference implementation of that idea. The golden‑ratio permutation, the residual representation and the UDP transport are written to be easy to read, modify and evolve, so the architecture can adapt to new radios, modems and sensor stacks instead of being frozen into one environment.
+
+For safety‑critical systems you should treat this implementation as a complementary layer rather than the only one in the loop: run it alongside a conventional, proven telemetry stack. The conventional stack guarantees strict delivery when the channel behaves; Holographix is there to salvage meaning, preserve awareness and keep perception alive when the channel – or parts of the infrastructure – start to fail.
 
 ---
 
