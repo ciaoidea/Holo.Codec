@@ -45,6 +45,24 @@ Then it computes the residual
 in 16‑bit integer space. This residual holds all the fine detail that is missing from the coarse view.
 
 The residual array is flattened to a vector of length `N`. Instead of cutting this vector into contiguous blocks, the codec uses a golden‑ratio based permutation based on [The Golden Ration Theorem](https://doi.org/10.4236/apm.2023.139038)
+
+
+The “golden ratio” here is not a slogan but the solution of a simple proportionality condition. If a segment of total length 1 is split into a longer part of length x and a shorter part of length 1 − x, the golden section is defined by
+
+    whole : longer = longer : shorter
+    1 : x = x : (1 − x)
+
+which is equivalent to
+
+    1 / x = x / (1 − x)
+    x^2 + x − 1 = 0
+
+The positive solution is x = (sqrt(5) − 1) / 2 ≈ 0.618.  
+The classical golden ratio φ is then φ = 1 / x = (1 + sqrt(5)) / 2 ≈ 1.618, with the useful identity φ − 1 = 1 / φ ≈ 0.618. In the codec we use this golden fraction φ − 1 as the normalized step on the residual line, so that the permutation `perm[i] = (i * step) mod N` spreads neighbouring samples as evenly as possible, in line with the Golden Ratio Theorem.
+
+<img width="591" height="256" alt="image" src="https://github.com/user-attachments/assets/235053ab-f4d8-4006-b033-16dac0e8ea9b" />
+
+
 . It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
 
 `perm[i] = (i * step) mod N`
