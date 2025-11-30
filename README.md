@@ -20,8 +20,6 @@ Together, these layers are designed as a next‑generation perceptual fabric for
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cf573e19-ec2c-4e24-9c26-db8515d514f2" />
 
-<img width="800" height="514" alt="image" src="https://github.com/user-attachments/assets/a4950cbe-66ae-48c4-8117-858ab84c4793" />
-
 
 ---
 
@@ -147,6 +145,8 @@ python3 holo.py --stack 32 frame1.png frame2.png frame3.png
 This command averages the frames pixel‑wise into `frame1_stack.png`, then encodes that stacked image into `frame1_stack.png.holo` with chunks around 32 KB. Each chunk now carries a view of the stacked, low‑noise frame.
 
 <img width="1280" height="667" alt="image" src="https://github.com/user-attachments/assets/d40ff353-4add-4314-82ae-a4d1db4f0994" />
+
+<img width="800" height="514" alt="image" src="https://github.com/user-attachments/assets/a4950cbe-66ae-48c4-8117-858ab84c4793" />
 
 ---
 
