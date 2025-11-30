@@ -173,7 +173,7 @@ python3 holo.py --stack 32 frame1.png frame2.png frame3.png
 
 This command averages the frames pixel‑wise into `frame1_stack.png`, then encodes that stacked image into `frame1_stack.png.holo` with chunks around 32 KB. Each chunk now carries a view of the stacked, low‑noise frame.
 
-<img width="1280" height="667" alt="image" src="https://github.com/user-attachments/assets/d40ff353-4add-4314-82ae-a4d1db4f0994" />
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/d40ff353-4add-4314-82ae-a4d1db4f0994" />
 
 ---
 
@@ -248,7 +248,7 @@ The original goal is resilience: keep useful information flowing when everything
 
 The codec and transport are meant to behave more like a living tissue than a brittle protocol. When bandwidth shrinks or packets vanish, they do not stop; they degrade gracefully, recombine whatever fragments are available, and try to maintain a coherent picture of the world from partial evidence. Physical nodes can appear, disappear, or move, but their holographic chunks remain in the field and can still be used by the rest of the network, the way pheromone trails guide ants until they evaporate.
 
-<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/2dbd1c2f-9bcb-497b-baeb-903ed0488665" />
+<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/2dbd1c2f-9bcb-497b-baeb-903ed0488665" />
 
 
 This repository is the reference implementation of that idea. The golden‑ratio permutation, the residual representation and the UDP transport are written to be easy to read, modify and evolve, so the architecture can adapt to new radios, modems and sensor stacks instead of being frozen into one environment.
