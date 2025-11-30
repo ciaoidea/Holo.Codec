@@ -64,6 +64,9 @@ The codec also exposes an image stacking helper. Multiple frames of the same sce
 
 <img width="1184" height="864" alt="image" src="https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4" />
 
+<img width="1184" height="864" alt="image" src="[https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4](https://github.com/ciaoidea/Holographix.io/blob/main/simulation/ezgif-7a008ed1a76b8024.gif)" />
+
+
 ---
 
 ## Installation
@@ -145,8 +148,6 @@ python3 holo.py --stack 32 frame1.png frame2.png frame3.png
 This command averages the frames pixel‑wise into `frame1_stack.png`, then encodes that stacked image into `frame1_stack.png.holo` with chunks around 32 KB. Each chunk now carries a view of the stacked, low‑noise frame.
 
 <img width="1280" height="667" alt="image" src="https://github.com/user-attachments/assets/d40ff353-4add-4314-82ae-a4d1db4f0994" />
-
-<img width="800" height="514" alt="image" src="https://github.com/user-attachments/assets/a4950cbe-66ae-48c4-8117-858ab84c4793" />
 
 ---
 
