@@ -60,7 +60,7 @@ which is equivalent to
 The positive solution is x = (sqrt(5) − 1) / 2 ≈ 0.618.  
 The classical golden ratio φ is then φ = 1 / x = (1 + sqrt(5)) / 2 ≈ 1.618, with the useful identity φ − 1 = 1 / φ ≈ 0.618. In the codec we use this golden fraction φ − 1 as the normalized step on the residual line, so that the permutation `perm[i] = (i * step) mod N` spreads neighbouring samples as evenly as possible, in line with the Golden Ratio Theorem.
 
-<img width="591" height="256" alt="image" src="https://github.com/user-attachments/assets/235053ab-f4d8-4006-b033-16dac0e8ea9b" />
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/235053ab-f4d8-4006-b033-16dac0e8ea9b" />
 
 
 It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
@@ -88,9 +88,9 @@ For generic binaries the same mechanism is applied to a coarse prefix plus the r
 
 The codec also exposes an image stacking helper. Multiple frames of the same scene can be averaged pixel‑wise into a single deeper exposure and *that* image can then be encoded holographically. Each holographic chunk then carries a view of the stacked frame, so the network can gradually accumulate more photons from many noisy captures.
 
-<img width="1184" height="864" alt="image" src="https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4" />
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/4cc56a98-2e5b-4197-8724-1646257dcbd4" />
 
-<img width="1184" height="864" alt="image" src="https://github.com/ciaoidea/Holographix.io/blob/main/simulation/ezgif-7a008ed1a76b8024.gif" />
+<img width="800" height="600" alt="image" src="https://github.com/ciaoidea/Holographix.io/blob/main/simulation/ezgif-7a008ed1a76b8024.gif" />
 
 
 ---
@@ -248,7 +248,7 @@ The original goal is resilience: keep useful information flowing when everything
 
 The codec and transport are meant to behave more like a living tissue than a brittle protocol. When bandwidth shrinks or packets vanish, they do not stop; they degrade gracefully, recombine whatever fragments are available, and try to maintain a coherent picture of the world from partial evidence. Physical nodes can appear, disappear, or move, but their holographic chunks remain in the field and can still be used by the rest of the network, the way pheromone trails guide ants until they evaporate.
 
-<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/2dbd1c2f-9bcb-497b-baeb-903ed0488665" />
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/2dbd1c2f-9bcb-497b-baeb-903ed0488665" />
 
 
 This repository is the reference implementation of that idea. The golden‑ratio permutation, the residual representation and the UDP transport are written to be easy to read, modify and evolve, so the architecture can adapt to new radios, modems and sensor stacks instead of being frozen into one environment.
