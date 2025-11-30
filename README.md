@@ -23,9 +23,9 @@ The project is organised around two working components and one experimental one:
 
 Together, these layers are designed as a next‑generation perceptual fabric for robots and other embodied agents with rich sensory awareness of their environment.
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cf573e19-ec2c-4e24-9c26-db8515d514f2" />
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/cf573e19-ec2c-4e24-9c26-db8515d514f2" />
 
-<img width="645" height="413" alt="image" src="https://github.com/user-attachments/assets/42436e14-c1ec-49b6-97d6-ae157dad7b69" />
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/42436e14-c1ec-49b6-97d6-ae157dad7b69" />
 
 
 ---
