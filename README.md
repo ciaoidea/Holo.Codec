@@ -37,7 +37,8 @@ Then it computes the residual
 
 in 16‑bit integer space. This residual holds all the fine detail that is missing from the coarse view.
 
-The residual array is flattened to a vector of length `N`. Instead of cutting this vector into contiguous blocks, the codec uses a golden‑ratio based permutation. It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
+The residual array is flattened to a vector of length `N`. Instead of cutting this vector into contiguous blocks, the codec uses a golden‑ratio based permutation based on [The Golden Ration Theorem](https://doi.org/10.4236/apm.2023.139038)
+. It picks a step `step ≈ (phi − 1) * N` with `phi = (1 + sqrt(5)) / 2`, adjusts it until `gcd(step, N) = 1`, and defines
 
 `perm[i] = (i * step) mod N`
 
