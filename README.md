@@ -20,6 +20,9 @@ Together, these layers are designed as a next‑generation perceptual fabric for
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/cf573e19-ec2c-4e24-9c26-db8515d514f2" />
 
+<img width="800" height="514" alt="image" src="https://github.com/user-attachments/assets/a4950cbe-66ae-48c4-8117-858ab84c4793" />
+
+
 ---
 
 ## How the holographic codec works
